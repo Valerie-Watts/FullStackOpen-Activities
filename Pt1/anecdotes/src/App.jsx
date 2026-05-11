@@ -25,6 +25,9 @@ const App = () => {
       {anecdotes[selected]}<br></br>
       <button onClick={() => copyVotes[selected] += 1}>vote</button>
       <button onClick={() => setSelected(Math.floor(Math.random() * anecdotes.length))}>next anecdote</button>
+      <h1>Anecdote with most votes</h1>
+      {anecdotes[selected]}
+      <p>has {copyVotes[selected]} votes</p>
     </div>
   )
 }
