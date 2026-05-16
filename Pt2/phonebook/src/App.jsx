@@ -1,121 +1,104 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from 'react'
+import './index.css'
+import Filter from './components/Filter'
+import PersonForm from './components/PersonForm'
+import Persons from './components/Persons'
+import Notification from './components/Notification'
+import personService from './services/persons'
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+  const [persons, setPersons] = useState([])
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+  const [filter, setFilter] = useState('')
+  const [message, setMessage] = useState(null)
+  const [messageType, setMessageType] = useState('success')
+
+  // 2.11 — carga datos del servidor al iniciar
+  useEffect(() => {
+    personService.getAll().then(initialPersons => {
+      setPersons(initialPersons)
+    })
+  }, [])
+
+  const showMessage = (text, type = 'success') => {
+    setMessage(text)
+    setMessageType(type)
+    setTimeout(() => setMessage(null), 4000)
+  }
+
+  const addPerson = (event) => {
+    event.preventDefault()
+
+    const existing = persons.find(p => p.name === newName)
+
+    // 2.15 — si ya existe, preguntar si actualizar el numero
+    if (existing) {
+      if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
+        const updatedPerson = { ...existing, number: newNumber }
+        personService
+          .update(existing.id, updatedPerson)
+          .then(returnedPerson => {
+            setPersons(persons.map(p => p.id !== existing.id ? p : returnedPerson))
+            showMessage(`Updated ${returnedPerson.name}`)
+            setNewName('')
+            setNewNumber('')
+          })
+          .catch(() => {
+            showMessage(`${existing.name} was already removed from server`, 'error')
+            setPersons(persons.filter(p => p.id !== existing.id))
+          })
+      }
+      return
+    }
+
+    const personObject = { name: newName, number: newNumber }
+
+    personService.create(personObject).then(returnedPerson => {
+      setPersons(persons.concat(returnedPerson))
+      showMessage(`Added ${returnedPerson.name}`)
+      setNewName('')
+      setNewNumber('')
+    })
+  }
+
+  // 2.14 — eliminar persona
+  const deletePerson = (id, name) => {
+    if (window.confirm(`Delete ${name}?`)) {
+      personService.remove(id).then(() => {
+        setPersons(persons.filter(p => p.id !== id))
+        showMessage(`Deleted ${name}`)
+      })
+    }
+  }
+
+  const personsToShow = filter
+    ? persons.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()))
+    : persons
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div>
+      <h2>Phonebook</h2>
 
-      <div className="ticks"></div>
+    
+      <Notification message={message} type={messageType} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <Filter filter={filter} onFilterChange={e => setFilter(e.target.value)} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <h3>Add a new</h3>
+
+      <PersonForm
+        onSubmit={addPerson}
+        newName={newName}
+        onNameChange={e => setNewName(e.target.value)}
+        newNumber={newNumber}
+        onNumberChange={e => setNewNumber(e.target.value)}
+      />
+
+      <h3>Numbers</h3>
+
+      <Persons persons={personsToShow} onDelete={deletePerson} />
+    </div>
   )
 }
 
