@@ -1,121 +1,89 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 
-function App() {
-  const [count, setCount] = useState(0)
+const Weather = ({ capital }) => {
+  const [weather, setWeather] = useState(null)
+  const apiKey = 'ed9cd2aec7d24369535a28c0ff84d91c'
+
+  useEffect(() => {
+    axios
+      .get(`https://api.openweathermap.org/data/2.5/weather?q=${capital}&appid=${apiKey}&units=metric`)
+      .then(response => setWeather(response.data))
+  }, [capital])
+
+  if (!weather) return null
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div>
+      <h3>Weather in {capital}</h3>
+      <p>temperature {weather.main.temp} Celsius</p>
+      <img
+        src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
+        alt={weather.weather[0].description}
+      />
+      <p>wind {weather.wind.speed} m/s</p>
+    </div>
+  )
+}
 
-      <div className="ticks"></div>
+const CountryDetail = ({ country }) => (
+  <div>
+    <h2>{country.name.common}</h2>
+    <p>Capital {country.capital[0]}</p>
+    <p>Area {country.area}</p>
+    <h3>Languages:</h3>
+    <ul>
+      {Object.values(country.languages).map(lang => (
+        <li key={lang}>{lang}</li>
+      ))}
+    </ul>
+    <img src={country.flags.png} alt={`flag of ${country.name.common}`} width="150" />
+    <Weather capital={country.capital[0]} />
+  </div>
+)
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+const App = () => {
+  const [search, setSearch] = useState('')
+  const [countries, setCountries] = useState([])
+  const [selected, setSelected] = useState(null)
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+  useEffect(() => {
+    axios
+      .get('https://studies.cs.helsinki.fi/restcountries/api/all')
+      .then(response => setCountries(response.data))
+  }, [])
+
+  const filtered = countries.filter(c =>
+    c.name.common.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const handleSearch = (e) => {
+    setSearch(e.target.value)
+    setSelected(null)
+  }
+
+  const renderResult = () => {
+    if (search === '') return null
+    if (selected) return <CountryDetail country={selected} />
+    if (filtered.length > 10) return <p>Too many matches, specify another filter</p>
+    if (filtered.length === 1) return <CountryDetail country={filtered[0]} />
+    return (
+      <ul>
+        {filtered.map(c => (
+          <li key={c.cca3}>
+            {c.name.common}
+            <button onClick={() => setSelected(c)}>show</button>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  return (
+    <div>
+      <div>find countries <input value={search} onChange={handleSearch} /></div>
+      {renderResult()}
+    </div>
   )
 }
 
