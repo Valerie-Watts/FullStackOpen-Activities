@@ -22,10 +22,10 @@ const App = () => {
   }, [])
 
   const showMessage = (text, type = 'success') => {
-    setMessage(text)
-    setMessageType(type)
-    setTimeout(() => setMessage(null), 4000)
-  }
+  setMessage(text)
+  setMessageType(type)
+  setTimeout(() => setMessage(null), 8000)
+}
 
   const addPerson = (event) => {
     event.preventDefault()
@@ -65,8 +65,10 @@ const App = () => {
     setNewNumber('')
   })
   .catch(error => {
-    showMessage(error.response.data.error, 'error')  // muestra el error de mongoose
-  })
+  console.log(error)
+  console.log(error.response)
+  showMessage(error.response.data.error, 'error')
+})
   }
 
   const deletePerson = (id, name) => {
