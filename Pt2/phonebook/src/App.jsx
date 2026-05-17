@@ -6,6 +6,7 @@ import Persons from './components/Persons'
 import Notification from './components/Notification'
 import personService from './services/persons'
 
+
 const App = () => {
   const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
@@ -14,7 +15,6 @@ const App = () => {
   const [message, setMessage] = useState(null)
   const [messageType, setMessageType] = useState('success')
 
-  // 2.11 — carga datos del servidor al iniciar
   useEffect(() => {
     personService.getAll().then(initialPersons => {
       setPersons(initialPersons)
@@ -32,7 +32,6 @@ const App = () => {
 
     const existing = persons.find(p => p.name === newName)
 
-    // 2.15 — si ya existe, preguntar si actualizar el numero
     if (existing) {
       if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
         const updatedPerson = { ...existing, number: newNumber }
@@ -62,7 +61,6 @@ const App = () => {
     })
   }
 
-  // 2.14 — eliminar persona
   const deletePerson = (id, name) => {
     if (window.confirm(`Delete ${name}?`)) {
       personService.remove(id).then(() => {
