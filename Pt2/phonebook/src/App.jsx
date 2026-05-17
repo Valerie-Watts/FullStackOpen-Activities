@@ -33,32 +33,40 @@ const App = () => {
     const existing = persons.find(p => p.name === newName)
 
     if (existing) {
-      if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
-        const updatedPerson = { ...existing, number: newNumber }
-        personService
-          .update(existing.id, updatedPerson)
-          .then(returnedPerson => {
-            setPersons(persons.map(p => p.id !== existing.id ? p : returnedPerson))
-            showMessage(`Updated ${returnedPerson.name}`)
-            setNewName('')
-            setNewNumber('')
-          })
-          .catch(() => {
-            showMessage(`${existing.name} was already removed from server`, 'error')
-            setPersons(persons.filter(p => p.id !== existing.id))
-          })
-      }
-      return
-    }
+  if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
+    const updatedPerson = { ...existing, number: newNumber }
+    personService
+      .update(existing.id, updatedPerson)
+      .then(returnedPerson => {
+        setPersons(persons.map(p => p.id !== existing.id ? p : returnedPerson))
+        showMessage(`Updated ${returnedPerson.name}`)
+        setNewName('')
+        setNewNumber('')
+      })
+      .catch(error => {
+        if (error.response && error.response.data.error) {
+          showMessage(error.response.data.error, 'error')
+        } else {
+          showMessage(`${existing.name} was already removed from server`, 'error')
+          setPersons(persons.filter(p => p.id !== existing.id))
+        }
+      })
+  }
+  return
+}
 
     const personObject = { name: newName, number: newNumber }
 
-    personService.create(personObject).then(returnedPerson => {
-      setPersons(persons.concat(returnedPerson))
-      showMessage(`Added ${returnedPerson.name}`)
-      setNewName('')
-      setNewNumber('')
-    })
+    personService.create(personObject)
+  .then(returnedPerson => {
+    setPersons(persons.concat(returnedPerson))
+    showMessage(`Added ${returnedPerson.name}`)
+    setNewName('')
+    setNewNumber('')
+  })
+  .catch(error => {
+    showMessage(error.response.data.error, 'error')  // muestra el error de mongoose
+  })
   }
 
   const deletePerson = (id, name) => {

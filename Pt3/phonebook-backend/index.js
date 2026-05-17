@@ -10,8 +10,22 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(error => console.log('error connecting:', error.message))
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String
+  name: {
+    type: String,
+    minLength: 3,
+    required: true
+  },
+  number: {
+    type: String,
+    minLength: 8,
+    required: true,
+    validate: {
+      validator: function(v) {
+        return /^\d{2,3}-\d+$/.test(v)
+      },
+      message: 'number must be format XX-XXXXXXX or XXX-XXXXXXX'
+    }
+  }
 })
 
 personSchema.set('toJSON', {
@@ -80,7 +94,7 @@ app.put('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndUpdate(
     request.params.id,
     { name, number },
-    { new: true }
+    { new: true, runValidators: true, context: 'query' }
   )
     .then(updatedPerson => response.json(updatedPerson))
     .catch(error => next(error))
@@ -94,6 +108,8 @@ app.use((error, request, response, next) => {
   console.error(error.message)
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
   }
   next(error)
 })
